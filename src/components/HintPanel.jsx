@@ -1,6 +1,6 @@
-import { GraduationCap, AlertCircle, MessageSquareWarning, Lightbulb, BrainCircuit, HelpCircle, Search, Eye, Lock, CheckCircle } from 'lucide-react'
+import { GraduationCap, AlertCircle, MessageSquareWarning, Lightbulb, BrainCircuit, HelpCircle, Search, Eye, Lock, CheckCircle, Trash2 } from 'lucide-react'
 
-export default function HintPanel({ hintMessages, hintLevel, canHint, canDeepExplain, canShowAnswer, onRequestHint, onRequestDeepExplanation, onShowAnswer, answerRevealed, answer }) {
+export default function HintPanel({ hintMessages, hintLevel, canHint, canDeepExplain, canShowAnswer, onRequestHint, onRequestDeepExplanation, onShowAnswer, onClearHints, answerRevealed, answer }) {
   const levelLabels = {
     0: { icon: <AlertCircle size={16} />, title: 'Raw Error', color: 'var(--accent-red)' },
     1: { icon: <MessageSquareWarning size={16} />, title: 'Teacher Says...', color: 'var(--accent-orange)' },
@@ -10,7 +10,19 @@ export default function HintPanel({ hintMessages, hintLevel, canHint, canDeepExp
 
   return (
     <div className="animate-fade-in">
-      <h3 style={{ marginBottom: 12, display: 'flex', alignItems: 'center', gap: '8px' }}><GraduationCap size={20} /> Teacher Assistance</h3>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+        <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}><GraduationCap size={20} /> Teacher Assistance</h3>
+        {hintMessages.length > 0 && (
+          <button 
+            className="btn btn-ghost btn-sm" 
+            onClick={onClearHints}
+            title="Clear all messages"
+            style={{ padding: '4px 8px', fontSize: '0.75rem', color: 'var(--text-muted)' }}
+          >
+            <Trash2 size={14} style={{ marginRight: 4 }} /> Clear
+          </button>
+        )}
+      </div>
       <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginBottom: 16 }}>
         Help is provided in layers. Each level gives progressively more guidance without giving away the answer.
       </p>
@@ -41,7 +53,7 @@ export default function HintPanel({ hintMessages, hintLevel, canHint, canDeepExp
           className={`hint-btn ${canHint ? 'unlocked' : ''}`}
           onClick={onRequestHint}
           disabled={!canHint || hintLevel >= 2}
-          title={hintLevel < 0 ? 'Run a query first' : hintLevel >= 2 ? 'Hint already used' : 'Get a gentle nudge'}
+          title={!canHint ? 'Run a query first' : hintLevel >= 2 ? 'Hint already used' : 'Get a gentle nudge'}
           style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
         >
           <Lightbulb size={16} /> Get Hint
@@ -50,7 +62,7 @@ export default function HintPanel({ hintMessages, hintLevel, canHint, canDeepExp
           className={`hint-btn ${canDeepExplain ? 'unlocked' : ''}`}
           onClick={onRequestDeepExplanation}
           disabled={!canDeepExplain || hintLevel >= 3}
-          title={hintLevel < 2 ? 'Use Hint first' : hintLevel >= 3 ? 'Already explained' : 'Deep conceptual breakdown'}
+          title={!canDeepExplain ? 'Use Hint first' : hintLevel >= 3 ? 'Already explained' : 'Deep conceptual breakdown'}
           style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
         >
           <Search size={16} /> Deep Explanation

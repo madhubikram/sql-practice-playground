@@ -10,16 +10,21 @@ import { searchKeymap } from '@codemirror/search'
 export default function SqlEditor({ value, onChange, onRun }) {
   const editorRef = useRef(null)
   const viewRef = useRef(null)
+  const onRunRef = useRef(onRun)
+
+  useEffect(() => {
+    onRunRef.current = onRun
+  }, [onRun])
 
   useEffect(() => {
     if (!editorRef.current) return
 
     const runKeymap = keymap.of([{
       key: 'Ctrl-Enter',
-      run: () => { onRun(); return true },
+      run: () => { onRunRef.current(); return true },
     }, {
       key: 'Cmd-Enter',
-      run: () => { onRun(); return true },
+      run: () => { onRunRef.current(); return true },
     }])
 
     const state = EditorState.create({

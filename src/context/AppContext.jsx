@@ -105,6 +105,8 @@ function reducer(state, action) {
     }
     case 'DISMISS_REFRESHER':
       return { ...state, refresherSuggested: null }
+    case 'CLEAR_HINTS':
+      return { ...state, hintMessages: [], hintLevel: -1 }
     case 'TOGGLE_THEME': {
       const newTheme = state.theme === 'dark' ? 'light' : 'dark'
       localStorage.setItem('sqlPlayground_theme', newTheme)

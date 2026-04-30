@@ -1,9 +1,10 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
-import { CheckCircle, Briefcase, BookOpen, Play, PartyPopper, XCircle, Keyboard, ListChecks, BookOpenCheck, RefreshCw } from 'lucide-react'
+import { CheckCircle, Briefcase, BookOpen, Play, PartyPopper, XCircle, Keyboard, ListChecks, BookOpenCheck, RefreshCw, AlertCircle, ChevronLeft, ChevronRight } from 'lucide-react'
 import { useApp } from '../context/AppContext.jsx'
 import { executeQuery, getDb } from '../engine/sqlEngine.js'
 import { databases } from '../data/schemas/index.js'
-import { generateLevel1Error, generateLevel2Hint, generateLevel3Explanation, validateAnswer } from '../engine/hintSystem.js'
+import { generateLevel1Error, generateLevel2Hint, generateLevel3Explanation, validateAnswer, analyzeLogicalError } from '../engine/hintSystem.js'
+import { getQuestionsForDatabase } from '../data/questions/index.js'
 import SqlEditor from './SqlEditor.jsx'
 import ResultsTable from './ResultsTable.jsx'
 import SchemaViewer from './SchemaViewer.jsx'
@@ -18,6 +19,11 @@ export default function Workspace() {
 
   const question = activeQuestion
   const schema = databases[activeDatabase]
+
+  const dbQuestions = getQuestionsForDatabase(activeDatabase)
+  const currentIndex = dbQuestions.findIndex(q => q.id === question.id)
+  const prevQuestion = currentIndex > 0 ? dbQuestions[currentIndex - 1] : null
+  const nextQuestion = currentIndex < dbQuestions.length - 1 ? dbQuestions[currentIndex + 1] : null
 
   const handleRunQuery = useCallback(() => {
     if (!userQuery.trim()) return
@@ -69,7 +75,17 @@ export default function Workspace() {
       } catch { /* ignore */ }
     } else {
       // Wrong result but no SQL error
-      dispatch({ type: 'SET_HINT_LEVEL', payload: Math.max(state.hintLevel, 0) })
+      if (state.hintLevel < 1) {
+        const logicHint = analyzeLogicalError(result, question.answer, db, userQuery)
+        dispatch({ type: 'SET_HINT_LEVEL', payload: 1 })
+        dispatch({ type: 'ADD_HINT_MESSAGE', payload: { 
+          level: 1, 
+          text: `**Logical Error Detected!**\n\n${logicHint}\n\nTip: Look at the 'Metrics' tab to see row counts, or check your SELECTed columns.`
+        } })
+      } else {
+        dispatch({ type: 'SET_HINT_LEVEL', payload: Math.max(state.hintLevel, 0) })
+      }
+      
       if (question.difficulty === 'intermediate') {
         dispatch({ type: 'INCREMENT_FAIL_STREAK', payload: question.concepts[0] || 'general' })
       }
@@ -77,11 +93,31 @@ export default function Workspace() {
   }, [userQuery, question, dispatch, state.hintLevel])
 
   const handleRequestHint = useCallback(() => {
-    const hint = generateLevel2Hint(question, userQuery)
-    dispatch({ type: 'SET_HINT_LEVEL', payload: 2 })
-    dispatch({ type: 'ADD_HINT_MESSAGE', payload: { level: 2, text: hint } })
+    if (state.hintLevel < 1) {
+      if (queryError) {
+        const humanError = generateLevel1Error(queryError)
+        dispatch({ type: 'SET_HINT_LEVEL', payload: 1 })
+        dispatch({ type: 'ADD_HINT_MESSAGE', payload: { level: 1, text: humanError } })
+      } else if (queryResult && !isResultCorrect) {
+        const db = getDb()
+        const logicHint = analyzeLogicalError({ results: queryResult }, question.answer, db, userQuery)
+        dispatch({ type: 'SET_HINT_LEVEL', payload: 1 })
+        dispatch({ type: 'ADD_HINT_MESSAGE', payload: { 
+          level: 1, 
+          text: `**Logical Error Detected!**\n\n${logicHint}\n\nTip: Look at the 'Metrics' tab to see row counts, or check your SELECTed columns.`
+        } })
+      } else {
+        const hint = generateLevel2Hint(question, userQuery)
+        dispatch({ type: 'SET_HINT_LEVEL', payload: 2 })
+        dispatch({ type: 'ADD_HINT_MESSAGE', payload: { level: 2, text: hint } })
+      }
+    } else {
+      const hint = generateLevel2Hint(question, userQuery)
+      dispatch({ type: 'SET_HINT_LEVEL', payload: 2 })
+      dispatch({ type: 'ADD_HINT_MESSAGE', payload: { level: 2, text: hint } })
+    }
     dispatch({ type: 'SET_ACTIVE_RESULT_TAB', payload: 'hints' })
-  }, [question, userQuery, dispatch])
+  }, [question, userQuery, queryError, queryResult, isResultCorrect, state.hintLevel, dispatch])
 
   const handleRequestDeepExplanation = useCallback(() => {
     const explanation = generateLevel3Explanation(question, userQuery, queryError)
@@ -99,14 +135,19 @@ export default function Workspace() {
     dispatch({ type: 'SET_ANSWER_REVEALED' })
   }, [dispatch])
 
+  const handleClearHints = useCallback(() => {
+    dispatch({ type: 'CLEAR_HINTS' })
+  }, [dispatch])
+
   const handleSetQuery = useCallback((q) => {
     dispatch({ type: 'SET_USER_QUERY', payload: q })
   }, [dispatch])
 
+  const hasAttempted = queryResult || queryError
   const isResultCorrect = questionSolved
-  const canHint = hintLevel >= 0 && !questionSolved
-  const canDeepExplain = hintLevel >= 2 && !questionSolved
-  const canShowAnswer = hintLevel >= 3 && !questionSolved
+  const canHint = hasAttempted && !questionSolved
+  const canDeepExplain = hasAttempted && hintLevel >= 2 && !questionSolved
+  const canShowAnswer = hasAttempted && hintLevel >= 3 && !questionSolved
 
   const tabs = [
     { id: 'output', label: 'Output', enabled: true },
@@ -128,6 +169,24 @@ export default function Workspace() {
               {questionSolved && <span className="badge" style={{ background: 'rgba(52,199,89,0.1)', color: 'var(--accent-green)', display: 'flex', alignItems: 'center', gap: '4px' }}><CheckCircle size={14} /> Solved</span>}
             </div>
             <h2 className="question-title" style={{ marginTop: 4 }}>{question.title}</h2>
+          </div>
+          <div className="flex gap-sm">
+            <button 
+              className="btn btn-ghost btn-sm" 
+              onClick={() => prevQuestion && dispatch({ type: 'SET_ACTIVE_QUESTION', payload: prevQuestion })}
+              disabled={!prevQuestion}
+              title="Previous Question"
+            >
+              <ChevronLeft size={16} /> Prev
+            </button>
+            <button 
+              className="btn btn-ghost btn-sm" 
+              onClick={() => nextQuestion && dispatch({ type: 'SET_ACTIVE_QUESTION', payload: nextQuestion })}
+              disabled={!nextQuestion}
+              title="Next Question"
+            >
+              Next <ChevronRight size={16} />
+            </button>
           </div>
         </div>
         <div className="question-roleplay" style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
@@ -189,6 +248,12 @@ export default function Workspace() {
                     <p style={{ color: 'var(--text-secondary)' }}>Your query returned the expected results.</p>
                   </div>
                 )}
+                {!isResultCorrect && queryResult && (
+                  <div className="hint-panel hint-level-1" style={{ marginBottom: 16, borderColor: 'rgba(255,149,0,0.3)', backgroundColor: 'rgba(255,149,0,0.05)' }}>
+                    <div className="hint-panel-title" style={{ color: 'var(--accent-orange)' }}><AlertCircle size={16} /> Incorrect Results</div>
+                    <div className="hint-panel-body">Your query executed successfully, but the data returned does not match the expected answer. Review your logic, compare row counts in the Metrics tab, or ask for a Hint!</div>
+                  </div>
+                )}
                 {queryResult && <ResultsTable results={queryResult} time={state.executionTime} />}
                 {queryError && !queryResult && (
                   <div className="hint-panel hint-level-0">
@@ -214,6 +279,7 @@ export default function Workspace() {
                 onRequestHint={handleRequestHint}
                 onRequestDeepExplanation={handleRequestDeepExplanation}
                 onShowAnswer={handleShowAnswer}
+                onClearHints={handleClearHints}
                 answerRevealed={answerRevealed}
                 answer={question.answer}
               />

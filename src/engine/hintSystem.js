@@ -105,6 +105,11 @@ export function generateLevel3Explanation(question, userQuery, rawError) {
 
   if (rawError) {
     explanation += `### Your Error\n"${rawError}"\n\n`
+  } else {
+    explanation += `### Why Your Query is logically Incorrect\nYour query executes without syntax errors, but the data it returns does not match the expected answer. This usually means you have a **logical error**.\n\n`
+    explanation += `- Check if you are filtering too many or too few rows in your \`WHERE\` clause.\n`
+    explanation += `- Ensure you are using the correct \`JOIN\` type (e.g., \`LEFT JOIN\` vs \`INNER JOIN\`).\n`
+    explanation += `- Verify that your \`GROUP BY\` and aggregation functions (\`COUNT\`, \`SUM\`) are applied to the correct columns.\n\n`
   }
 
   explanation += '### Key Concepts You Need\n'
@@ -168,5 +173,48 @@ export function validateAnswer(userResult, expectedSQL, db) {
     return sortRows(expectedRows) === sortRows(userRows)
   } catch {
     return false
+  }
+}
+
+export function analyzeLogicalError(userResult, expectedSQL, db, userQuery) {
+  try {
+    const expectedResult = db.exec(expectedSQL);
+    if (!userResult || !userResult.results || userResult.results.length === 0) {
+      if (expectedResult.length > 0 && expectedResult[0].values.length > 0) {
+        return "Your query returned no data (0 rows), but the expected answer contains data. Your `WHERE` or `JOIN` conditions might be too strict.";
+      }
+      return "Your query returned no data, which is unexpected.";
+    }
+
+    const userRows = userResult.results[0].values;
+    const expectedRows = expectedResult.length > 0 ? expectedResult[0].values : [];
+
+    const userColCount = userResult.results[0].columns.length;
+    const expectedColCount = expectedResult.length > 0 ? expectedResult[0].columns.length : 0;
+
+    if (userQuery.toUpperCase().includes('SELECT *') && !expectedSQL.toUpperCase().includes('SELECT *')) {
+      return "You used `SELECT *` to return all columns, but the question asks for specific columns. Check your SELECT clause.";
+    }
+
+    if (userColCount !== expectedColCount) {
+      return `You selected ${userColCount} column(s), but the expected answer has ${expectedColCount} column(s). Review which columns the question asks for.`;
+    }
+
+    if (userRows.length > expectedRows.length) {
+      return `Your query returned ${userRows.length} rows, but we only expected ${expectedRows.length} rows. You might be missing a \`WHERE\` filter, or your \`JOIN\` created duplicates.`;
+    }
+
+    if (userRows.length < expectedRows.length) {
+      return `Your query returned ${userRows.length} rows, but we expected ${expectedRows.length} rows. Your \`WHERE\` clause might be filtering out too much, or you used an \`INNER JOIN\` instead of a \`LEFT JOIN\`.`;
+    }
+
+    const sortRows = (rows) => rows.map(r => r.join('|')).sort().join('||');
+    if (sortRows(expectedRows) === sortRows(userRows)) {
+      return "Your query returned the exact right data, but in the wrong order! Did you forget an `ORDER BY` clause, or sort in the wrong direction (ASC vs DESC)?";
+    }
+
+    return "Your query returned the correct number of rows and columns, but the actual data values don't match. Check if you selected the right columns or if your math/string logic is slightly off.";
+  } catch (e) {
+    return "Your query executed successfully, but the data returned doesn't match the expected answer. Check your row counts and columns!";
   }
 }
