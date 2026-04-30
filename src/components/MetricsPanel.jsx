@@ -1,3 +1,5 @@
+import { BarChart2, Check, X, Lightbulb } from 'lucide-react'
+
 export default function MetricsPanel({ metrics }) {
   if (!metrics) return null
 
@@ -8,7 +10,7 @@ export default function MetricsPanel({ metrics }) {
 
   return (
     <div className="animate-fade-in">
-      <h3 style={{ marginBottom: 8 }}>📊 Query Performance Metrics</h3>
+      <h3 style={{ marginBottom: 8, display: 'flex', alignItems: 'center', gap: '8px' }}><BarChart2 size={20} /> Query Performance Metrics</h3>
       <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginBottom: 20 }}>
         See how your query compares to the optimal solution.
       </p>
@@ -34,12 +36,14 @@ export default function MetricsPanel({ metrics }) {
           <div className="metric-label">Expected Rows</div>
         </div>
         <div className={`metric-card ${rowMatch ? 'metric-good' : 'metric-bad'}`}>
-          <div className="metric-value">{rowMatch ? '✓' : '✗'}</div>
+          <div className="metric-value" style={{ display: 'flex', justifyContent: 'center' }}>
+            {rowMatch ? <Check size={24} /> : <X size={24} />}
+          </div>
           <div className="metric-label">Row Match</div>
         </div>
       </div>
       <div style={{ marginTop: 24, padding: 16, background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
-        <strong>💡 Performance Tips:</strong>
+        <strong style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><Lightbulb size={16} /> Performance Tips:</strong>
         <ul style={{ marginTop: 8, paddingLeft: 20 }}>
           <li>A ratio close to 1.0x means your query is near-optimal</li>
           <li>Higher ratios may indicate unnecessary subqueries or missing indexes</li>

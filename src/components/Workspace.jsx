@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
+import { CheckCircle, Briefcase, BookOpen, Play, PartyPopper, XCircle, Keyboard, ListChecks, BookOpenCheck, RefreshCw } from 'lucide-react'
 import { useApp } from '../context/AppContext.jsx'
 import { executeQuery, getDb } from '../engine/sqlEngine.js'
 import { databases } from '../data/schemas/index.js'
@@ -124,19 +125,22 @@ export default function Workspace() {
             <div className="question-meta">
               <span className={`badge badge-${question.difficulty}`}>{question.difficulty}</span>
               <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>{schema?.name}</span>
-              {questionSolved && <span className="badge" style={{ background: 'rgba(52,211,153,0.15)', color: 'var(--accent-green)' }}>✓ Solved</span>}
+              {questionSolved && <span className="badge" style={{ background: 'rgba(52,199,89,0.1)', color: 'var(--accent-green)', display: 'flex', alignItems: 'center', gap: '4px' }}><CheckCircle size={14} /> Solved</span>}
             </div>
             <h2 className="question-title" style={{ marginTop: 4 }}>{question.title}</h2>
           </div>
         </div>
-        <div className="question-roleplay">💼 {question.roleplay}</div>
+        <div className="question-roleplay" style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
+          <Briefcase size={18} style={{ flexShrink: 0, marginTop: '2px' }} />
+          <span>{question.roleplay}</span>
+        </div>
         <p style={{ marginTop: 8, fontSize: '0.9rem' }}>{question.task}</p>
       </div>
 
       {/* Refresher Banner */}
       {state.refresherSuggested && !questionSolved && (
         <div className="refresher-banner" style={{ margin: '12px 24px 0' }}>
-          <span style={{ fontSize: '1.4rem' }}>📚</span>
+          <div style={{ color: 'var(--accent-orange)' }}><BookOpen size={24} /></div>
           <div>
             <p><strong>Struggling with {state.refresherSuggested}?</strong></p>
             <p>You've missed 3 in a row. Consider going back to a beginner question on this topic to refresh your fundamentals.</p>
@@ -152,8 +156,8 @@ export default function Workspace() {
           <div className="editor-toolbar">
             <span className="editor-toolbar-title">SQL Editor</span>
             <div className="flex gap-sm">
-              <button className="btn btn-primary btn-sm" onClick={handleRunQuery}>
-                ▶ Run Query
+              <button className="btn btn-primary btn-sm" onClick={handleRunQuery} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <Play size={14} fill="currentColor" /> Run Query
               </button>
             </div>
           </div>
@@ -181,20 +185,20 @@ export default function Workspace() {
               <>
                 {isResultCorrect && (
                   <div className="success-banner" style={{ marginBottom: 16 }}>
-                    <h3>🎉 Correct!</h3>
+                    <h3 style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}><PartyPopper size={20} /> Correct!</h3>
                     <p style={{ color: 'var(--text-secondary)' }}>Your query returned the expected results.</p>
                   </div>
                 )}
                 {queryResult && <ResultsTable results={queryResult} time={state.executionTime} />}
                 {queryError && !queryResult && (
                   <div className="hint-panel hint-level-0">
-                    <div className="hint-panel-title" style={{ color: 'var(--accent-red)' }}>❌ Error</div>
+                    <div className="hint-panel-title" style={{ color: 'var(--accent-red)' }}><XCircle size={16} /> Error</div>
                     <div className="hint-panel-body"><code>{queryError}</code></div>
                   </div>
                 )}
                 {!queryResult && !queryError && (
                   <div style={{ color: 'var(--text-muted)', textAlign: 'center', padding: 48 }}>
-                    <p style={{ fontSize: '2rem', marginBottom: 8 }}>⌨️</p>
+                    <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}><Keyboard size={48} opacity={0.5} /></div>
                     <p>Write your SQL query and click "Run Query" or press Ctrl+Enter</p>
                   </div>
                 )}
@@ -222,21 +226,21 @@ export default function Workspace() {
             )}
             {activeResultTab === 'alternates' && questionSolved && (
               <div className="animate-fade-in">
-                <h3 style={{ marginBottom: 16 }}>📋 Alternate Solutions</h3>
+                <h3 style={{ marginBottom: 16, display: 'flex', alignItems: 'center', gap: '8px' }}><ListChecks size={20} /> Alternate Solutions</h3>
                 <p style={{ color: 'var(--text-muted)', marginBottom: 16, fontSize: '0.85rem' }}>
                   There are often multiple ways to write SQL that produces the same result. Studying alternatives broadens your thinking.
                 </p>
                 <div className="hint-panel hint-level-2" style={{ marginBottom: 12 }}>
-                  <div className="hint-panel-title">✅ Your Solution</div>
+                  <div className="hint-panel-title"><CheckCircle size={16} /> Your Solution</div>
                   <pre style={{ fontFamily: 'var(--font-mono)', fontSize: '0.82rem', whiteSpace: 'pre-wrap' }}>{userQuery}</pre>
                 </div>
                 <div className="hint-panel hint-level-1" style={{ marginBottom: 12 }}>
-                  <div className="hint-panel-title">📖 Reference Solution</div>
+                  <div className="hint-panel-title"><BookOpenCheck size={16} /> Reference Solution</div>
                   <pre style={{ fontFamily: 'var(--font-mono)', fontSize: '0.82rem', whiteSpace: 'pre-wrap' }}>{question.answer}</pre>
                 </div>
                 {question.altAnswers?.map((alt, i) => (
                   <div key={i} className="hint-panel hint-level-3" style={{ marginBottom: 12 }}>
-                    <div className="hint-panel-title">🔄 Alternative {i + 1}</div>
+                    <div className="hint-panel-title"><RefreshCw size={16} /> Alternative {i + 1}</div>
                     <pre style={{ fontFamily: 'var(--font-mono)', fontSize: '0.82rem', whiteSpace: 'pre-wrap' }}>{alt}</pre>
                   </div>
                 ))}

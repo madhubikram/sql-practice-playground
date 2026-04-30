@@ -1,3 +1,5 @@
+import { Table, Key, Link } from 'lucide-react'
+
 export default function SchemaViewer({ schema }) {
   if (!schema) return null
 
@@ -8,11 +10,13 @@ export default function SchemaViewer({ schema }) {
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
         {schema.tables.map(table => (
           <div key={table.name} className="er-table">
-            <div className="er-table-name">📋 {table.name}</div>
+            <div className="er-table-name"><Table size={16} /> {table.name}</div>
             {table.columns.map(col => (
               <div key={col.name} className="er-column">
-                <span className={`er-column-name ${col.pk ? 'er-pk' : ''} ${col.fk ? 'er-fk' : ''}`}>
-                  {col.pk ? '🔑 ' : ''}{col.fk ? '🔗 ' : ''}{col.name}
+                <span className={`er-column-name ${col.pk ? 'er-pk' : ''} ${col.fk ? 'er-fk' : ''}`} style={{ display: 'flex', alignItems: 'center' }}>
+                  {col.pk && <Key size={12} style={{ marginRight: '4px' }} />}
+                  {col.fk && <Link size={12} style={{ marginRight: '4px' }} />}
+                  {col.name}
                 </span>
                 <span className="er-column-type">{col.type}</span>
               </div>

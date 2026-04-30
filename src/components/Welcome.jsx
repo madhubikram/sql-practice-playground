@@ -1,8 +1,10 @@
+import { PenLine } from 'lucide-react'
+
 export default function Welcome({ databases, counts, onSelectDatabase, message }) {
   if (message) {
     return (
       <div className="welcome">
-        <h2 style={{ marginBottom: 16 }}>📝 Ready to Practice</h2>
+        <h2 style={{ marginBottom: 16, display: 'flex', alignItems: 'center', gap: '8px' }}><PenLine size={24} /> Ready to Practice</h2>
         <p>{message}</p>
       </div>
     )

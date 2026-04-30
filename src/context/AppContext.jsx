@@ -1,6 +1,9 @@
-import { createContext, useContext, useReducer, useCallback } from 'react'
+import { createContext, useContext, useReducer, useCallback, useEffect } from 'react'
 
 const AppContext = createContext(null)
+
+const savedSolved = JSON.parse(localStorage.getItem('sqlPlayground_solved') || '[]')
+const savedStreak = JSON.parse(localStorage.getItem('sqlPlayground_streak') || '{}')
 
 const initialState = {
   // SQL Engine
@@ -32,14 +35,15 @@ const initialState = {
   aptitudeQuestion: null,
 
   // Progress
-  solvedQuestions: new Set(),
-  failedStreak: {},     // { topic: count }
+  solvedQuestions: new Set(savedSolved),
+  failedStreak: savedStreak,     // { topic: count }
   refresherSuggested: null,
 
   // UI
   activeResultTab: 'output', // output | hints | schema | metrics | alternates
   questionSolved: false,
   metrics: null,
+  theme: localStorage.getItem('sqlPlayground_theme') || 'dark',
 }
 
 function reducer(state, action) {
@@ -101,6 +105,11 @@ function reducer(state, action) {
     }
     case 'DISMISS_REFRESHER':
       return { ...state, refresherSuggested: null }
+    case 'TOGGLE_THEME': {
+      const newTheme = state.theme === 'dark' ? 'light' : 'dark'
+      localStorage.setItem('sqlPlayground_theme', newTheme)
+      return { ...state, theme: newTheme }
+    }
     default:
       return state
   }
@@ -128,6 +137,12 @@ function resetQuestionState() {
 
 export function AppProvider({ children }) {
   const [state, dispatch] = useReducer(reducer, initialState)
+
+  useEffect(() => {
+    localStorage.setItem('sqlPlayground_solved', JSON.stringify(Array.from(state.solvedQuestions)))
+    localStorage.setItem('sqlPlayground_streak', JSON.stringify(state.failedStreak))
+  }, [state.solvedQuestions, state.failedStreak])
+
   return (
     <AppContext.Provider value={{ state, dispatch }}>
       {children}

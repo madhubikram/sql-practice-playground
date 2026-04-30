@@ -26,6 +26,10 @@ export default function App() {
     init()
   }, [])
 
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', state.theme)
+  }, [state.theme])
+
   const handleSelectDatabase = useCallback(async (dbId) => {
     dispatch({ type: 'SET_DB_LOADING', payload: true })
     try {
@@ -34,6 +38,10 @@ export default function App() {
       loadDatabaseSchema(db, schema)
       dispatch({ type: 'SET_DB', payload: db })
       dispatch({ type: 'SET_ACTIVE_DATABASE', payload: dbId })
+      const dbQuestions = getQuestionsForDatabase(dbId)
+      if (dbQuestions.length > 0) {
+        dispatch({ type: 'SET_ACTIVE_QUESTION', payload: dbQuestions[0] })
+      }
     } catch (err) {
       console.error('Failed to load database:', err)
     } finally {
@@ -68,7 +76,12 @@ export default function App() {
 
   return (
     <>
-      <Header totalSolved={state.solvedQuestions.size} totalQuestions={totalQuestionCount} />
+      <Header 
+        totalSolved={state.solvedQuestions.size} 
+        totalQuestions={totalQuestionCount} 
+        theme={state.theme}
+        onToggleTheme={() => dispatch({ type: 'TOGGLE_THEME' })}
+      />
       <div className="app-layout">
         <Sidebar
           databases={databaseList}
