@@ -98,7 +98,7 @@ export default function Workspace() {
         const humanError = generateLevel1Error(queryError)
         dispatch({ type: 'SET_HINT_LEVEL', payload: 1 })
         dispatch({ type: 'ADD_HINT_MESSAGE', payload: { level: 1, text: humanError } })
-      } else if (queryResult && !isResultCorrect) {
+      } else if (queryResult && !questionSolved) {
         const db = getDb()
         const logicHint = analyzeLogicalError({ results: queryResult }, question.answer, db, userQuery)
         dispatch({ type: 'SET_HINT_LEVEL', payload: 1 })
@@ -117,7 +117,7 @@ export default function Workspace() {
       dispatch({ type: 'ADD_HINT_MESSAGE', payload: { level: 2, text: hint } })
     }
     dispatch({ type: 'SET_ACTIVE_RESULT_TAB', payload: 'hints' })
-  }, [question, userQuery, queryError, queryResult, isResultCorrect, state.hintLevel, dispatch])
+  }, [question, userQuery, queryError, queryResult, questionSolved, state.hintLevel, dispatch])
 
   const handleRequestDeepExplanation = useCallback(() => {
     const explanation = generateLevel3Explanation(question, userQuery, queryError)
